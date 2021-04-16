@@ -48,5 +48,4 @@ defmodule BankingApi.User do
         {:ok, user, acc}
     end
   end
-
 end
