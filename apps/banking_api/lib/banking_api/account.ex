@@ -25,19 +25,21 @@ defmodule BankingApi.Account do
 
         from(acc in Account, where: acc.user_id == ^user.id)
         |> Repo.update_all(set: [balance: account.balance - amount])
+        Logger.info("#{user.name} took #{amount} from their account")
         {:ok, account}
     else
       {:error, :not_enough_balance} ->
         Logger.warning("Not enough money in balance")
         {:error, :not_enough_balance}
-      {:error, :user_not_found} ->
+
+        {:error, :user_not_found} ->
         Logger.warning("User not found")
         {:error, :user_not_found}
     end
   end
 
   @doc """
-  Transfer a given amount from cpf1 to cpf2
+  Transfer a given amount from user with cpf1 to user with cpf2
   """
   def transfer(cpf1, cpf2, amount) do
     with {:ok, user1, _account} <- User.get(cpf1),
@@ -57,7 +59,8 @@ defmodule BankingApi.Account do
       {:error, :not_enough_balance} ->
         Logger.warning("Not enough money in balance")
         {:error, :not_enough_balance}
-      {:error, :user_not_found} ->
+
+        {:error, :user_not_found} ->
           Logger.warning("User not found")
           {:error, :user_not_found}
 
