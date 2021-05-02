@@ -5,7 +5,10 @@ defmodule BankingApi.Users.Inputs.Create do
 
   import Ecto.Changeset
 
+  use Ecto.Schema
+
   alias BankingApi.Users.Schemas.User
+
 
   @required [:name, :cpf]
   @optional []

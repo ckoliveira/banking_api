@@ -26,6 +26,7 @@ defmodule BankingApi.Umbrella.MixProject do
   defp deps do
     [
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
+      {:argon2_elixir, "~> 2.0"}
     ]
   end
 
