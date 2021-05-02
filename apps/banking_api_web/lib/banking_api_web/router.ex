@@ -17,6 +17,5 @@ defmodule BankingApiWeb.Router do
 
     post "/withdraw", AccountController, :withdraw
     post "/transfer", AccountController, :transfer
-
   end
 end

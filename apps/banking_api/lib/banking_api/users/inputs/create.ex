@@ -9,7 +9,6 @@ defmodule BankingApi.Users.Inputs.Create do
 
   alias BankingApi.Users.Schemas.User
 
-
   @required [:name, :cpf]
   @optional []
 

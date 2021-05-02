@@ -17,8 +17,7 @@ defmodule BankingApi.Users.Schemas.User do
     field :cpf, :string
     has_one :accounts, Account
     has_one :passwords, Password
-
-
+    
     timestamps()
   end
 end
