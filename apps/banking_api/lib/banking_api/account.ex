@@ -19,30 +19,29 @@ defmodule BankingApi.Account do
     end
   end
 
-  def withdraw(cpf, amount) do
-    with {:ok, user, _account} <- User.get(cpf),
+  def withdraw(cpf, password, amount) do
+    with {:ok, user} <- User.authenticate(cpf, password),
          {:ok, account} <- check_balance(user, amount) do
 
         from(acc in Account, where: acc.user_id == ^user.id)
         |> Repo.update_all(set: [balance: account.balance - amount])
-        Logger.info("#{user.name} took #{amount} from their account")
         {:ok, account}
     else
+      {:error, :invalid_credentials} ->
+        Logger.warning("invalid credentials")
+        {:error, :invalid_credentials}
+
       {:error, :not_enough_balance} ->
         Logger.warning("Not enough money in balance")
         {:error, :not_enough_balance}
-
-        {:error, :user_not_found} ->
-        Logger.warning("User not found")
-        {:error, :user_not_found}
     end
   end
 
   @doc """
-  Transfer a given amount from user with cpf1 to user with cpf2
+  Transfer a given amount from cpf1 to cpf2
   """
-  def transfer(cpf1, cpf2, amount) do
-    with {:ok, user1, _account} <- User.get(cpf1),
+  def transfer(cpf1, password, cpf2, amount) do
+    with {:ok, user1} <- User.authenticate(cpf1, password),
          {:ok, user2, account2} <- User.get(cpf2),
          {:ok, account} <- check_balance(user1, amount) do
 
@@ -53,6 +52,7 @@ defmodule BankingApi.Account do
           # and add it to user2
           from(acc in Account, where: acc.user_id == ^user2.id)
           |> Repo.update_all(set: [balance: account2.balance + amount])
+
           Logger.info("#{user1.name} transfered #{amount} to #{user2.name}")
           {:ok, account, account2}
     else
@@ -60,9 +60,13 @@ defmodule BankingApi.Account do
         Logger.warning("Not enough money in balance")
         {:error, :not_enough_balance}
 
-        {:error, :user_not_found} ->
+      {:error, :user_not_found} ->
           Logger.warning("User not found")
           {:error, :user_not_found}
+
+      {:error, :invalid_credentials} ->
+        Logger.warning("Invalid cpf or password")
+        {:error, :invalid_credentials}
 
     end
   end

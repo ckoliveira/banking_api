@@ -5,7 +5,6 @@ defmodule BankingApiWeb.Router do
     plug :accepts, ["json"]
   end
 
-
   scope "/api/user", BankingApiWeb do
     pipe_through :api
 
