@@ -1,5 +1,4 @@
 defmodule BankingApi.Passwords.Inputs.Create do
-
   import Ecto.Changeset
 
   alias BankingApi.Passwords.Schemas.Password
@@ -21,9 +20,9 @@ defmodule BankingApi.Passwords.Inputs.Create do
 
   def hash_password(%Ecto.Changeset{changes: %{password: pwd}} = changeset) do
     password_hash = Argon2.hash_pwd_salt(pwd, salt: @default_salt)
+
     changeset
     |> put_change(:salt, @default_salt)
     |> put_change(:password_hash, password_hash)
   end
-
 end

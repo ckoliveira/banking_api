@@ -14,9 +14,9 @@ defmodule BankingApi.Seeds do
   alias BankingApi.User
 
   User.create(%{
-  name: "Fernanda Santos",
-  cpf: "11111111124",
-  password: "ad67ffg87d9"
+    name: "Fernanda Santos",
+    cpf: "11111111124",
+    password: "ad67ffg87d9"
   })
 
   User.create(%{
@@ -36,7 +36,4 @@ defmodule BankingApi.Seeds do
     cpf: "11111111126",
     password: "5gh8g994n"
   })
-
-
-
 end

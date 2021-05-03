@@ -1,12 +1,11 @@
 defmodule BankingApiWeb.AccountController do
-
   use BankingApiWeb, :controller
 
   alias BankingApi.Account
   alias BankingApi.User
 
   def withdraw(conn, %{} = params) do
-    case Account.withdraw(params["cpf"], params["amount"]) do
+    case Account.withdraw(params["cpf"], params["password"], params["amount"]) do
       {:ok, _account} ->
         {:ok, user, _} = User.get(params["cpf"])
         send_json(conn, 200, "#{user.name} withdrew #{params["amount"]} from their account")
@@ -14,13 +13,13 @@ defmodule BankingApiWeb.AccountController do
       {:error, :not_enough_balance} ->
         send_json(conn, 400, %{type: "balance error", description: "not enough money in balance"})
 
-      {:error, :user_not_found} ->
-        send_json(conn, 400, %{type: "user error", description: "user not found"})
+      {:error, :invalid_credentials} ->
+        send_json(conn, 400, %{type: "credential error", description: "invalid cpf and/or password"})
     end
   end
 
   def transfer(conn, %{} = params) do
-    case Account.transfer(params["cpf1"], params["cpf2"], params["amount"]) do
+    case Account.transfer(params["cpf1"], params["password"], params["cpf2"], params["amount"]) do
       {:ok, _acc1, _acc2} ->
         {:ok, user1, _} = User.get(params["cpf1"])
         {:ok, user2, _} = User.get(params["cpf2"])
@@ -29,8 +28,8 @@ defmodule BankingApiWeb.AccountController do
       {:error, :not_enough_balance} ->
         send_json(conn, 400, %{type: "balance error", description: "not enough money in balance"})
 
-      {:error, :user_not_found} ->
-        send_json(conn, 400, %{type: "user error", description: "user not found"})
+      {:error, :invalid_credentials} ->
+        send_json(conn, 400, %{type: "credential error", description: "invalid cpf and/or password"})
     end
   end
 

@@ -1,5 +1,4 @@
 defmodule BankingApi.Passwords.Schemas.Password do
-
   use Ecto.Schema
 
   alias BankingApi.Users.Schemas.User

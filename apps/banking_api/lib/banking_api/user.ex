@@ -14,13 +14,13 @@ defmodule BankingApi.User do
 
   def authenticate(cpf, pwd) do
     with {:ok, user, _account} <- get(cpf),
-         {:pwd, %{password_hash: pwd_hash}} <- {:pwd, Repo.get_by(Password, [user_id: user.id])},
+         {:pwd, %{password_hash: pwd_hash}} <- {:pwd, Repo.get_by(Password, user_id: user.id)},
          {:pwd_status, true} <- {:pwd_status, Argon2.verify_pass(pwd, pwd_hash)} do
-
-          {:ok, user}
+      {:ok, user}
     else
       {:error, :user_not_found} ->
         {:error, :invalid_credentials}
+
       {:pwd_status, false} ->
         {:error, :invalid_credentials}
     end
@@ -34,26 +34,23 @@ defmodule BankingApi.User do
 
     with %{valid?: true} = changeset <- Create.changeset(u),
          %{valid?: true} = pwd_changeset <- PWDCreate.changeset(pwd) do
+      Repo.insert(changeset)
+      u = Repo.get_by(User, cpf: user.cpf)
 
-        Repo.insert(changeset)
-        u = Repo.get_by(User, [cpf: user.cpf])
+      account = Ecto.build_assoc(u, :accounts)
+      password = Ecto.build_assoc(u, :passwords, pwd_changeset.changes)
 
-        account = Ecto.build_assoc(u, :accounts)
-        password = Ecto.build_assoc(u, :passwords, pwd_changeset.changes)
+      Repo.insert(account)
+      Repo.insert(password)
 
-        Repo.insert(account)
-        Repo.insert(password)
-
-        Logger.info("User #{user.name} created!")
-        {:ok, u}
-
+      Logger.info("User #{user.name} created!")
+      {:ok, u}
     else
       %{valid?: false} = changeset ->
         %{errors: errors} = changeset
         Logger.info("Error while trying to create new user: #{inspect(errors)}")
         {:error, changeset}
     end
-
   rescue
     Ecto.ConstraintError ->
       Logger.info("CPF already being used")
@@ -63,11 +60,12 @@ defmodule BankingApi.User do
   def get(cpf) do
     Logger.info("Try to get an user and balance info using a CPF")
 
-    case Repo.get_by(User, [cpf: cpf]) do
+    case Repo.get_by(User, cpf: cpf) do
       nil ->
         {:error, :user_not_found}
+
       user ->
-        acc = Repo.get_by(Account, [user_id: user.id])
+        acc = Repo.get_by(Account, user_id: user.id)
         {:ok, user, acc}
     end
   end

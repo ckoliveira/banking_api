@@ -1,5 +1,4 @@
 defmodule BankingApi.Account do
-
   alias BankingApi.Users.Schemas.User
   alias BankingApi.Accounts.Schemas.Account
   alias BankingApi.User
@@ -10,10 +9,12 @@ defmodule BankingApi.Account do
   require Logger
 
   defp check_balance(user, value) do
-    account = Repo.get_by(Account, [user_id: user.id])
+    account = Repo.get_by(Account, user_id: user.id)
+
     case account.balance >= value do
       true ->
         {:ok, account}
+
       false ->
         {:error, :not_enough_balance}
     end
@@ -22,10 +23,10 @@ defmodule BankingApi.Account do
   def withdraw(cpf, password, amount) do
     with {:ok, user} <- User.authenticate(cpf, password),
          {:ok, account} <- check_balance(user, amount) do
+      from(acc in Account, where: acc.user_id == ^user.id)
+      |> Repo.update_all(set: [balance: account.balance - amount])
 
-        from(acc in Account, where: acc.user_id == ^user.id)
-        |> Repo.update_all(set: [balance: account.balance - amount])
-        {:ok, account}
+      {:ok, account}
     else
       {:error, :invalid_credentials} ->
         Logger.warning("invalid credentials")
@@ -45,29 +46,28 @@ defmodule BankingApi.Account do
          {:ok, user2, account2} <- User.get(cpf2),
          {:ok, account} <- check_balance(user1, amount) do
 
-          # remove amount from user1
-          from(acc in Account, where: acc.user_id == ^user1.id)
-          |> Repo.update_all(set: [balance: account.balance - amount])
+      # remove amount from user1
+      from(acc in Account, where: acc.user_id == ^user1.id)
+      |> Repo.update_all(set: [balance: account.balance - amount])
 
-          # and add it to user2
-          from(acc in Account, where: acc.user_id == ^user2.id)
-          |> Repo.update_all(set: [balance: account2.balance + amount])
+      # and add it to user2
+      from(acc in Account, where: acc.user_id == ^user2.id)
+      |> Repo.update_all(set: [balance: account2.balance + amount])
 
-          Logger.info("#{user1.name} transfered #{amount} to #{user2.name}")
-          {:ok, account, account2}
+      Logger.info("#{user1.name} transfered #{amount} to #{user2.name}")
+      {:ok, account, account2}
     else
       {:error, :not_enough_balance} ->
         Logger.warning("Not enough money in balance")
         {:error, :not_enough_balance}
 
       {:error, :user_not_found} ->
-          Logger.warning("User not found")
-          {:error, :user_not_found}
+        Logger.warning("User not found")
+        {:error, :user_not_found}
 
       {:error, :invalid_credentials} ->
         Logger.warning("Invalid cpf or password")
         {:error, :invalid_credentials}
-
     end
   end
 end

@@ -1,5 +1,4 @@
 defmodule BankingApiWeb.UserController do
-
   use BankingApiWeb, :controller
 
   alias BankingApi.User
@@ -7,20 +6,23 @@ defmodule BankingApiWeb.UserController do
   def fetch(conn, %{"cpf" => cpf}) do
     case User.get(cpf) do
       {:ok, user, account} ->
-        msg = %{name: user.name,
-              balance: account.balance}
+        msg = %{name: user.name, balance: account.balance}
         send_json(conn, 200, msg)
 
       {:error, :user_not_found} ->
-        send_json(conn, 400, %{type: "invalid input", description: "cpf #{inspect(cpf)} not found"})
-
-      end
+        send_json(conn, 400, %{
+          type: "invalid input",
+          description: "cpf #{inspect(cpf)} not found"
+        })
+    end
   end
 
   def create(conn, %{} = params) do
     user = %{name: params["name"], cpf: params["cpf"]}
+
     case User.create(user) do
-      {:ok, user} -> send_json(conn, 200, user)
+      {:ok, user} ->
+        send_json(conn, 200, user)
 
       {:error, %Ecto.Changeset{errors: errors}} ->
         msg = %{type: "invalid input", description: "#{inspect(errors)}"}

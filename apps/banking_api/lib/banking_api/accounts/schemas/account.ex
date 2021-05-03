@@ -15,7 +15,4 @@ defmodule BankingApi.Accounts.Schemas.Account do
 
     timestamps()
   end
-
-
-
 end
