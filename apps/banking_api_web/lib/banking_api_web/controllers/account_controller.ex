@@ -5,7 +5,7 @@ defmodule BankingApiWeb.AccountController do
   alias BankingApi.User
 
   def withdraw(conn, %{} = params) do
-    case Account.withdraw(params["cpf"], params["password"], params["amount"]) do
+    case Account.withdraw(params["cpf"], params["password"], String.to_integer(params["amount"])) do
       {:ok, _account} ->
         {:ok, user, _} = User.get(params["cpf"])
         send_json(conn, 200, "#{user.name} withdrew #{params["amount"]} from their account")
@@ -19,7 +19,8 @@ defmodule BankingApiWeb.AccountController do
   end
 
   def transfer(conn, %{} = params) do
-    case Account.transfer(params["cpf1"], params["password"], params["cpf2"], params["amount"]) do
+    IO.inspect(params)
+    case Account.transfer(params["cpf1"], params["password"], params["cpf2"], String.to_integer(params["amount"])) do
       {:ok, _acc1, _acc2} ->
         {:ok, user1, _} = User.get(params["cpf1"])
         {:ok, user2, _} = User.get(params["cpf2"])
