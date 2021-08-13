@@ -9,13 +9,13 @@ defmodule BankingApiWeb.Router do
     pipe_through :api
 
     post "/", UserController, :create
-    get "/:cpf", UserController, :fetch
+    get "/fetch", UserController, :fetch
   end
 
   scope "/api/account", BankingApiWeb do
     pipe_through :api
 
-    post "/withdraw", AccountController, :withdraw
-    post "/transfer", AccountController, :transfer
+    patch "/withdraw", AccountsController, :withdraw
+    patch "/transfer", AccountsController, :transfer
   end
 end
