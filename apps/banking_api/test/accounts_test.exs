@@ -5,67 +5,89 @@ defmodule BankingApi.AccountsTest do
   alias BankingApi.Account
 
   describe "test withdraws" do
-    test "try to withdraw from account with enough balance" do
-      user = %{
-        name: "maurizio",
-        cpf: "11122233345",
-        password: "8ji898jdjav"
+    setup do
+      password = "8ji898jdjav"
+
+      params = %{
+        name: "user",
+        cpf: "12332112331",
+        password_hash: Argon2.hash_pwd_salt(password)
       }
 
-      assert {:ok, _user} = User.create(user)
-      assert {:ok, _account} = Account.withdraw(user.cpf, user.password, 500)
+      user = User.create(params)
+
+      {:ok, params: params, user: user, password: password}
     end
 
-    test "try to withdraw from account with not enough balance" do
-      user = %{
-        name: "mathias",
-        cpf: "11122233345",
-        password: "plae39vnz"
-      }
+    test "try to withdraw from account with enough balance", ctx do
+      params = ctx.params
+      assert {:ok, _account} = Account.withdraw(params.cpf, ctx.password, 500)
+    end
 
-      assert {:ok, _user} = User.create(user)
-      assert {:error, :not_enough_balance} = Account.withdraw(user.cpf, user.password, 1001)
+    test "try to withdraw from account with not enough balance", ctx do
+      params = ctx.params
+      assert {:error, :not_enough_balance} = Account.withdraw(params.cpf, ctx.password, 1001)
     end
 
     test "try to withdraw from non existent account" do
       pwd = "8h598thuhf4"
       cpf = "11122433345"
-      assert {:error, :invalid_credentials} = Account.withdraw(cpf, pwd, 500)
+      assert {:error, :user_not_found} = Account.withdraw(cpf, pwd, 500)
     end
   end
 
   describe "test transferences" do
     setup do
-      [
-        cpf1: "11122233345",
-        cpf2: "55544433321",
-        name1: "maurizio",
-        name2: "julia",
-        pwd1: "7yhf9h85g8h8",
-        pwd2: "nij09j48j8j92",
-        user1: User.create(%{name: "maurizio", cpf: "11122233345", password: "7yhf9h85g8h8"}),
-        user2: User.create(%{name: "julia", cpf: "55544433321", password: "nij09j48j8j92"})
-      ]
+      pwd1 = "7yhf9h85g8h8"
+      pwd2 = "nij09j48j8j92"
+
+      params1 = %{
+        cpf: "11122233345",
+        name: "maurizio",
+        password_hash: Argon2.hash_pwd_salt(pwd1)
+      }
+
+      params2 = %{
+        cpf: "55544433321",
+        name: "julia",
+        password_hash: Argon2.hash_pwd_salt(pwd2)
+      }
+
+      User.create(params1)
+      User.create(params2)
+
+      {:ok, params1: params1, params2: params2, pwd1: pwd1, pwd2: pwd2}
     end
 
-    test "try to transfer from account with enough balance", state do
+    test "try to transfer from account with enough balance", ctx do
+      params1 = ctx.params1
+      params2 = ctx.params2
+
       assert {:ok, _account1, _account2} =
-               Account.transfer(state.cpf1, state.pwd1, state.cpf2, 100)
+               Account.transfer(params1.cpf, ctx.pwd1, params2.cpf, 100)
     end
 
-    test "try to transfer from account with not enough balance", state do
+    test "try to transfer from account with not enough balance", ctx do
+      params1 = ctx.params1
+      params2 = ctx.params2
+
       assert {:error, :not_enough_balance} =
-               Account.transfer(state.cpf1, state.pwd1, state.cpf2, 1001)
+               Account.transfer(params1.cpf, ctx.pwd1, params2.cpf, 1001)
     end
 
-    test "try to transfer to non existent account", state do
+    test "try to transfer to non existent account", ctx do
+      params1 = ctx.params1
+
       assert {:error, :user_not_found} =
-               Account.transfer(state.cpf1, state.pwd1, "99988877700", 200)
+               Account.transfer(params1.cpf, ctx.pwd1, "99988877700", 200)
     end
 
-    test "try to to transfer passing wrong password", state do
-      assert {:error, :invalid_credentials} =
-               Account.transfer(state.cpf1, "8jun8j888jnja", state.cpf2, 200)
+    test "try to to transfer passing wrong password", ctx do
+      params1 = ctx.params1
+      params2 = ctx.params2
+
+      assert {:error, :invalid_password} =
+               Account.transfer(params1.cpf, "wrong password", params2.cpf, 200)
     end
   end
 end
