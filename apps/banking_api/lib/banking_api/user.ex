@@ -1,10 +1,8 @@
 defmodule BankingApi.User do
   @moduledoc """
-  Creates an User entry on the database and associates it with an Account
+  Creates a User entry on the database and associates it with an Account and a Password.
   """
 
-  alias BankingApi.Passwords.Inputs.Create, as: PWDCreate
-  alias BankingApi.Users.Inputs.Create
   alias BankingApi.Users.Schemas.User
   alias BankingApi.Accounts.Schemas.Account
   alias BankingApi.Passwords.Schemas.Password
@@ -14,26 +12,27 @@ defmodule BankingApi.User do
 
   def authenticate(cpf, pwd) do
     with {:ok, user, _account} <- get(cpf),
-         {:pwd, %{password_hash: pwd_hash}} <- {:pwd, Repo.get_by(Password, user_id: user.id)},
-         {:pwd_status, true} <- {:pwd_status, Argon2.verify_pass(pwd, pwd_hash)} do
+         {:password, %{password_hash: pwd_hash}} <-
+           {:password, Repo.get_by(Password, user_id: user.id)},
+         {:authenticated?, true} <- {:authenticated?, Argon2.verify_pass(pwd, pwd_hash)} do
       {:ok, user}
     else
-      {:error, :user_not_found} ->
-        {:error, :invalid_credentials}
+      {:authenticated?, false} ->
+        {:error, :invalid_password}
 
-      {:pwd_status, false} ->
-        {:error, :invalid_credentials}
+      {:error, :user_not_found} ->
+        {:error, :user_not_found}
     end
   end
 
-  def create(%{} = user) do
+  def create(%{} = input) do
     Logger.info("Creating new user...")
 
-    u = %{name: user.name, cpf: user.cpf}
-    pwd = %{password: user.password}
+    user = %{name: input.name, cpf: input.cpf}
+    password = %{password_hash: input.password_hash}
 
-    with %{valid?: true} = changeset <- Create.changeset(u),
-         %{valid?: true} = pwd_changeset <- PWDCreate.changeset(pwd) do
+    with %{valid?: true} = changeset <- User.changeset(user),
+         %{valid?: true} = pwd_changeset <- Password.changeset(password) do
       Repo.insert(changeset)
       u = Repo.get_by(User, cpf: user.cpf)
 
@@ -48,7 +47,7 @@ defmodule BankingApi.User do
     else
       %{valid?: false} = changeset ->
         %{errors: errors} = changeset
-        Logger.info("Error while trying to create new user: #{inspect(errors)}")
+        Logger.error("Error while trying to create new user: #{inspect(errors)}")
         {:error, changeset}
     end
   rescue
@@ -58,7 +57,7 @@ defmodule BankingApi.User do
   end
 
   def get(cpf) do
-    Logger.info("Try to get an user and balance info using a CPF")
+    Logger.info("Tryin to get a user and balance info using a CPF")
 
     case Repo.get_by(User, cpf: cpf) do
       nil ->

@@ -28,12 +28,16 @@ defmodule BankingApi.Account do
 
       {:ok, account}
     else
-      {:error, :invalid_credentials} ->
-        Logger.warning("invalid credentials")
-        {:error, :invalid_credentials}
+      {:error, :user_not_found} = error ->
+        Logger.error("user with cpf #{cpf} not found")
+        error
+
+      {:error, :invalid_password} = error ->
+        Logger.error("invalid password for user with cpf #{cpf}")
+        error
 
       {:error, :not_enough_balance} ->
-        Logger.warning("Not enough money in balance")
+        Logger.error("Not enough money in balance")
         {:error, :not_enough_balance}
     end
   end
@@ -45,7 +49,6 @@ defmodule BankingApi.Account do
     with {:ok, user1} <- User.authenticate(cpf1, password),
          {:ok, user2, account2} <- User.get(cpf2),
          {:ok, account} <- check_balance(user1, amount) do
-
       # remove amount from user1
       from(acc in Account, where: acc.user_id == ^user1.id)
       |> Repo.update_all(set: [balance: account.balance - amount])
@@ -57,17 +60,17 @@ defmodule BankingApi.Account do
       Logger.info("#{user1.name} transfered #{amount} to #{user2.name}")
       {:ok, account, account2}
     else
-      {:error, :not_enough_balance} ->
-        Logger.warning("Not enough money in balance")
-        {:error, :not_enough_balance}
+      {:error, :not_enough_balance} = error ->
+        Logger.error("Not enough money in balance")
+        error
 
-      {:error, :user_not_found} ->
-        Logger.warning("User not found")
-        {:error, :user_not_found}
+      {:error, :user_not_found} = error ->
+        Logger.error("user not found")
+        error
 
-      {:error, :invalid_credentials} ->
-        Logger.warning("Invalid cpf or password")
-        {:error, :invalid_credentials}
+      {:error, :invalid_password} = error ->
+        Logger.error("invalid password")
+        error
     end
   end
 end
