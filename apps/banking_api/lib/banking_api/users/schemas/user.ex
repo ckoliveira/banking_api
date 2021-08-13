@@ -1,17 +1,18 @@
 defmodule BankingApi.Users.Schemas.User do
   @moduledoc """
-  An User representation
+  A User representation.
 
-  each user can only have one account and each account belongs to only one user
+  Each user can only have one account and each account belongs to only one user.
   """
 
-  use Ecto.Schema
+  use BankingApi.Schema
 
   alias BankingApi.Accounts.Schemas.Account
   alias BankingApi.Passwords.Schemas.Password
 
-  @primary_key {:id, :binary_id, autogenerate: true}
-  @foreign_key_type :binary_id
+  @required [:name, :cpf]
+  @optional []
+
   schema "users" do
     field :name, :string
     field :cpf, :string
@@ -19,5 +20,16 @@ defmodule BankingApi.Users.Schemas.User do
     has_one :passwords, Password
 
     timestamps()
+  end
+
+  def changeset(params) when is_map(params), do: changeset(%__MODULE__{}, params)
+
+  def changeset(model \\ %__MODULE__{}, params) do
+    model
+    |> cast(params, @required ++ @optional)
+    |> validate_required(@required)
+    |> validate_length(:name, min: 3)
+    |> validate_length(:cpf, min: 11, max: 11)
+    |> validate_format(:cpf, ~r/[0-9]+/)
   end
 end
