@@ -24,7 +24,7 @@ defmodule BankingApiWeb.MixProject do
   def application do
     [
       mod: {BankingApiWeb.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :banking_api]
     ]
   end
 
