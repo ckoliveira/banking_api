@@ -2,35 +2,43 @@ defmodule BankingApiWeb.UserController do
   use BankingApiWeb, :controller
 
   alias BankingApi.User
+  alias BankingApi.Users.Inputs.CreateUser
+  alias BankingApi.ChangesetValidation
 
-  def fetch(conn, %{"cpf" => cpf}) do
-    case User.get(cpf) do
-      {:ok, user, account} ->
-        msg = %{name: user.name, balance: account.balance}
-        send_json(conn, 200, msg)
+  alias BankingApiWeb.UserAccountView
+  alias BankingApiWeb.UserView
 
-      {:error, :user_not_found} ->
-        send_json(conn, 400, %{
-          type: "invalid input",
-          description: "cpf #{inspect(cpf)} not found"
-        })
+  @doc """
+  Creates a user.
+  """
+  @spec create(conn :: Plug.Conn.t(), params :: map) :: Plug.Conn.t()
+  def create(conn, params) do
+    with {:ok, input} <- ChangesetValidation.cast_and_apply(CreateUser, params),
+         {:ok, user} <- User.create(input) do
+      conn
+      |> put_view(UserView)
+      |> render("show.json", %{user: user})
+    else
+      {:error, %Ecto.Changeset{valid?: false, errors: err}} ->
+        send_json(conn, 400, %{type: "invalid input", description: "#{inspect(err)}"})
+
+      {:error, :duplicated_cpf} ->
+        send_json(conn, 400, %{type: "invalid input", description: "cpf already being used"})
     end
   end
 
-  def create(conn, %{} = params) do
-    user = %{name: params["name"], cpf: params["cpf"]}
-
-    case User.create(user) do
-      {:ok, user} ->
-        send_json(conn, 200, user)
-
-      {:error, %Ecto.Changeset{errors: errors}} ->
-        msg = %{type: "invalid input", description: "#{inspect(errors)}"}
-        send_json(conn, 400, msg)
-
-      {:error, :duplicated_cpf} ->
-        msg = %{type: "invalid input", description: "cpf already being used"}
-        send_json(conn, 412, msg)
+  def fetch(conn, %{"password" => password, "cpf" => cpf}) do
+    with {:ok, _user} <- User.authenticate(cpf, password),
+         {:ok, user, account} <- User.get(cpf) do
+      conn
+      |> put_view(UserAccountView)
+      |> render("show.json", %{account: account, user: user})
+    else
+      {:error, error} when error in [:user_not_found, :invalid_password] ->
+        send_json(conn, 412, %{
+          type: "credential error",
+          description: "invalid cpf and/or password"
+        })
     end
   end
 
